@@ -36,14 +36,18 @@ impl Miner {
         // Start mining loop
         let mut last_hash_at = 0;
         let mut last_balance = 0;
+        let mut max_session_difficulty = 0 as u32;
+        let mut difficulty_collection: Vec<u32> = vec![0; 32];
+        let mut loop_count = 0 as u32;
         loop {
+            loop_count += 1;
             // Fetch proof
             let config = get_config(&self.rpc_client).await;
             let proof =
                 get_updated_proof_with_authority(&self.rpc_client, signer.pubkey(), last_hash_at)
                     .await;
             println!(
-                "\n\nStake: {} ORE\n{}  Multiplier: {:12}x",
+                "\n\nStake: {} ORE\n{}  Multiplier: {:12}x\n  Best Diff: {}",
                 amount_u64_to_string(proof.balance),
                 if last_hash_at.gt(&0) {
                     format!(
@@ -53,8 +57,10 @@ impl Miner {
                 } else {
                     "".to_string()
                 },
-                calculate_multiplier(proof.balance, config.top_balance)
+                calculate_multiplier(proof.balance, config.top_balance),
+                max_session_difficulty
             );
+
             last_hash_at = proof.last_hash_at;
             last_balance = proof.balance;
 
@@ -65,6 +71,21 @@ impl Miner {
             let solution =
                 Self::find_hash_par(proof, cutoff_time, args.cores, config.min_difficulty as u32)
                     .await;
+
+            difficulty_collection[(solution.1 - 1) as usize] += 1;
+
+            if solution.1 > max_session_difficulty {
+                max_session_difficulty = solution.1;
+            }
+
+            for el in difficulty_collection.iter() {
+                print!("  {:02}", el);
+            }
+            print!("\n ");
+            for el in difficulty_collection.iter(){
+                let z = (*el) as f32 / loop_count as f32 ;
+                print!(" {:02}%", ((z * 100.0) as u32));
+            }
 
             // Build instruction set
             let mut ixs = vec![ore_api::instruction::auth(proof_pubkey(signer.pubkey()))];
@@ -79,7 +100,7 @@ impl Miner {
                 signer.pubkey(),
                 signer.pubkey(),
                 self.find_bus().await,
-                solution,
+                solution.0,
             ));
 
             // Submit transaction
@@ -94,7 +115,7 @@ impl Miner {
         cutoff_time: u64,
         cores: u64,
         min_difficulty: u32,
-    ) -> Solution {
+    ) -> (Solution, u32) {
         // Dispatch job to each thread
         let progress_bar = Arc::new(spinner::new_progress_bar());
         let global_best_difficulty = Arc::new(RwLock::new(0u32));
@@ -203,7 +224,7 @@ impl Miner {
             best_difficulty
         ));
 
-        Solution::new(best_hash.d, best_nonce.to_le_bytes())
+        (Solution::new(best_hash.d, best_nonce.to_le_bytes()), best_difficulty)
     }
 
     pub fn check_num_cores(&self, cores: u64) {
