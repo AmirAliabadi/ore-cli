@@ -72,21 +72,6 @@ impl Miner {
                 Self::find_hash_par(proof, cutoff_time, args.cores, config.min_difficulty as u32)
                     .await;
 
-            difficulty_collection[(solution.1 - 1) as usize] += 1;
-
-            if solution.1 > max_session_difficulty {
-                max_session_difficulty = solution.1;
-            }
-
-            for el in difficulty_collection.iter() {
-                print!("  {:02}", el);
-            }
-            print!("\n ");
-            for el in difficulty_collection.iter(){
-                let z = (*el) as f32 / loop_count as f32 ;
-                print!(" {:02}%", ((z * 100.0) as u32));
-            }
-
             // Build instruction set
             let mut ixs = vec![ore_api::instruction::auth(proof_pubkey(signer.pubkey()))];
             let mut compute_budget = 500_000;
@@ -107,6 +92,27 @@ impl Miner {
             self.send_and_confirm(&ixs, ComputeBudget::Fixed(compute_budget), false)
                 .await
                 .ok();
+
+            difficulty_collection[(solution.1 - 1) as usize] += 1;
+
+            if solution.1 > max_session_difficulty {
+                max_session_difficulty = solution.1;
+            }
+
+            let mut i = 1;
+            for _el in difficulty_collection.iter() {
+                print!("  {:02}", i);
+                i += 1;
+            }
+            print!("\n ");
+            for el in difficulty_collection.iter() {
+                print!(" {:02} ", el);
+            }
+            print!("\n ");
+            for el in difficulty_collection.iter(){
+                let z = (*el) as f32 / loop_count as f32 ;
+                print!(" {:02}%", ((z * 100.0) as u32));
+            }
         }
     }
 
