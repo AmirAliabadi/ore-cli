@@ -41,6 +41,7 @@ impl Miner {
         let mut max_session_difficulty = 0 as u32;
         let mut difficulty_collection: Vec<u32> = vec![0; 32];
         let mut loop_count = 0 as u32;
+        let mut sum_difficulty = 0 as u64;
         loop {
             loop_count += 1;
             // Fetch proof
@@ -97,6 +98,8 @@ impl Miner {
 
             difficulty_collection[(solution.1 - 1) as usize] += 1;
 
+            sum_difficulty = sum_difficulty + (solution.1 as u64);
+
             if solution.1 > max_session_difficulty {
                 max_session_difficulty = solution.1;
             }
@@ -115,6 +118,7 @@ impl Miner {
                 let z = (*el) as f32 / loop_count as f32 ;
                 print!(" {:02}%", ((z * 100.0) as u32));
             }
+            print!("\n average difficulty: {}", (sum_difficulty as f32)/(loop_count as f32));
         }
     }
 
