@@ -118,7 +118,7 @@ impl Miner {
                 let z = (*el) as f32 / loop_count as f32 ;
                 print!(" {:02}%", ((z * 100.0) as u32));
             }
-            print!("\n average difficulty: {}", (sum_difficulty as f32)/(loop_count as f32));
+            print!("\n  average difficulty: {}", (sum_difficulty as f32)/(loop_count as f32));
         }
     }
 
