@@ -50,7 +50,7 @@ impl Miner {
                 get_updated_proof_with_authority(&self.rpc_client, signer.pubkey(), last_hash_at)
                     .await;
             println!(
-                "\n\nStake: {} ORE\n{}  Multiplier: {:12}x\n  Best Diff: {}",
+                "\n\nStake: {} ORE\n{}  Multiplier: {:12}x\n  Max Session Diff: {}",
                 amount_u64_to_string(proof.balance),
                 if last_hash_at.gt(&0) {
                     format!(
@@ -96,7 +96,11 @@ impl Miner {
                 .await
                 .ok();
 
-            difficulty_collection[(solution.1 - 1) as usize] += 1;
+            let mut foo  = solution.1 ;
+            if foo > 32 {
+                foo = 32;
+            }
+            difficulty_collection[(foo - 1) as usize] += 1;
 
             sum_difficulty = sum_difficulty + (solution.1 as u64);
 
@@ -118,7 +122,7 @@ impl Miner {
                 let z = (*el) as f32 / loop_count as f32 ;
                 print!(" {:02}%", ((z * 100.0) as u32));
             }
-            print!("\n  average difficulty: {}", (sum_difficulty as f32)/(loop_count as f32));
+            print!("\n  average difficulty: {}, min_diff: {}, base_reward_rate: {}, top_balance: {}", (sum_difficulty as f32)/(loop_count as f32), config.min_difficulty, config.base_reward_rate, config.top_balance);
         }
     }
 
